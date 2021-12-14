@@ -1,6 +1,10 @@
 #include "mbed.h"
 #include "LCD_DISCO_L476VG.h"
 #include "MenuBar.h"
+#include "CommonsSets.h"
+#include "Mutex.h"
+
+
 // Joystick button
 InterruptIn center(JOYSTICK_CENTER);
 InterruptIn left(JOYSTICK_LEFT);
@@ -18,6 +22,13 @@ volatile bool butRight = false;
 volatile bool butCenter = false;
 volatile bool stopGame = false;
 bool gameRun = false;
+Timeout gameEnd;
+Mutex dataMutex;
+    //init empty struct for sharing data
+sharedStruct sharedData = {};
+
+
+
 
 void center_pressed() {
     butCenter = true;  
@@ -44,13 +55,34 @@ void right_pressed() {
     led_green = 1;
 }
 
-void endGame() {
-    stopGame = true;
+void runMenuDisplay(MenuBar* disp) {
+    disp->menuThread();
+    ThisThread::sleep_for(50ms);
 }
 
+void endGame() {
+        sharedData.changeSharedDataMut->lock();
+        sharedData.gameIsRunning = false;
+        sharedData.changeSharedDataMut->unlock();
+        gameEnd.detach();
+    }
+
+
+
+
+
 int main() {
+   // memset(&sharedData, 0, sizeof(sharedStruct));
+
+    sharedData.changeSharedDataMut = &dataMutex;
+    sharedData.actualMove = NONE;
+    sharedData.gameIsRunning = false;
+    sharedData.score = 0;
+    Thread glassThread;
     LCD_DISCO_L476VG lcd;
     lcd.Clear();
+
+    MenuBar glass(&lcd, &sharedData);
 
     center.rise(&center_pressed);
     left.rise(&left_pressed);
@@ -63,46 +95,43 @@ int main() {
     up.mode(PullDown);
     down.mode(PullDown);
 
-    MenuBar glass(&lcd);
-
-    Timeout gameEnd;
-
+    
+   glassThread.start(callback(runMenuDisplay, &glass));
+    
     while(true) {
 
-        if(glass.isGameRunning()) {
-            if(!gameRun ) {
-                gameEnd.attach(&endGame, 5s);
-                gameRun = true;
-            }
-            if(stopGame) {
-                glass.gameStopped();
-                gameEnd.detach();
-                stopGame= false;
-                gameRun = false;
-            }
+        sharedData.changeSharedDataMut->lock();
+        if(sharedData.gameIsRunning) {
+            gameEnd.attach(&endGame, 5s);
         }
+        sharedData.changeSharedDataMut->unlock();
 
-            
+   
      
             if(butUp) {
-                glass.butClicked(JOYSTICK_UP);
-                butUp = false;
+                sharedData.changeSharedDataMut->lock();
+                sharedData.actualMove = UP;
+                sharedData.changeSharedDataMut->unlock();
                 led_green = 0;
             } else if(butDown) {
-                glass.butClicked(JOYSTICK_DOWN);
-                butDown = false;
+                sharedData.changeSharedDataMut->lock();
+                sharedData.actualMove = DOWN;
+                sharedData.changeSharedDataMut->unlock();
                 led_green = 0;
             } else if(butRight) {
-                glass.butClicked(JOYSTICK_RIGHT);
-                butRight = false;
+                sharedData.changeSharedDataMut->lock();
+                sharedData.actualMove = RIGHT;
+                sharedData.changeSharedDataMut->unlock();
                 led_green = 0;
             } else if(butLeft) {
-                glass.butClicked(JOYSTICK_LEFT);
-                butLeft = false;
+                sharedData.changeSharedDataMut->lock();
+                sharedData.actualMove = LEFT;
+                sharedData.changeSharedDataMut->unlock();
                 led_green = 0;
             }else if(butCenter) {
-                glass.butClicked(JOYSTICK_CENTER);
-                butCenter = false;
+                sharedData.changeSharedDataMut->lock();
+                sharedData.actualMove = CENTER;
+                sharedData.changeSharedDataMut->unlock();
                 led_green = 0;
             }
         

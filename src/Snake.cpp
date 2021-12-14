@@ -3,16 +3,16 @@
 
 Snake::Snake(COORD position, int speed) {
     position = position;
-    speed = speed
+    speed = speed;
     dir = LEFT;
-    lenght = 1;
+    length = 1;
 
     body.push_back(position);
 }
 
 
-void Snake::setDirection(direction dir) {
-    direction = dir;
+void Snake::setDirection(Direction dir) {
+    dir = dir;
 }
 
 void Snake::growUp() {
@@ -27,7 +27,7 @@ vector<COORD> Snake::getBody() {
 }
 
 void Snake::moveSnake() {
-    switch (direction) {
+    switch (dir) {
         case UP:
             position.y -= speed;
             break;
@@ -39,6 +39,8 @@ void Snake::moveSnake() {
             break;
         case RIGHT:
             position.x += speed;
+            break;
+        default:
             break;
     }
 
@@ -53,7 +55,7 @@ bool Snake::collided() {
         return true;
     }
 
-    for(int i = 0; i< lenght-1; i++) {
+    for(int i = 0; i< length-1; i++) {
         if(position.x == body[i].x && position.y == body[i].y) {
             return true;
         }

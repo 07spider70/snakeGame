@@ -2,12 +2,14 @@
 #include "MenuBar.h"
 #include <string>
 
-MenuBar::MenuBar(LCD_DISCO_L476VG* menuDisplay) {
-    _actualScore = 0;
+MenuBar::MenuBar(LCD_DISCO_L476VG* menuDisplay, sharedStruct* sharedData) {
     _highScore = 0;
     askReset = false;
-    gameRun = false;
     showScore = false;
+    sharedData= sharedData;
+    gameRun = false;
+    _actualScore = 0;
+
 
     _actualMenu = START;
     _display = menuDisplay;
@@ -63,9 +65,7 @@ void MenuBar::accept() {
         switch(_actualMenu) {
         case(START):
             //start game and show actual score
-            gameRun = true;
-            _actualMenu = RUNNING;
-            _actualScore++;
+            startGame();
             break;
         case(HIGH_SCORE):
             sprintf((char *)DisplayedString, "score: %d ", _highScore);
@@ -91,6 +91,32 @@ void MenuBar::accept() {
         
 
     refresh();
+}
+
+void MenuBar::menuThread() {
+    
+        //sme vo vlakne, vzdy overujeme co sa deje
+        Direction tempDir = NONE;
+        int tempScore;
+        sharedData->changeSharedDataMut->lock();
+        tempDir = sharedData->actualMove;
+        tempScore = sharedData->score;
+        sharedData->changeSharedDataMut->unlock();
+        
+        butClicked(tempDir);
+        setScore(tempScore);
+
+        
+
+    
+}
+
+void MenuBar::startGame() {
+    gameRun = true;
+    sharedData->changeSharedDataMut->lock();
+    sharedData->gameIsRunning = gameRun;
+    sharedData->changeSharedDataMut->unlock();
+    _actualMenu = RUNNING;
 }
 
 void MenuBar::decline() {
@@ -143,31 +169,31 @@ void MenuBar::refresh() {
 }
 
 
-void MenuBar::butClicked(PinName joyBut) {
+void MenuBar::butClicked(Direction joyBut) {
     if(isGameRunning()) {
         return;
     }
     switch(joyBut) {
-        case(JOYSTICK_CENTER): {
+        case(CENTER): {
             accept();
             break;
         }
 
-        case(JOYSTICK_LEFT): {
+        case(LEFT): {
             back();
             break;
         }
 
-        case(JOYSTICK_RIGHT): {
+        case(RIGHT): {
             next();
             break;
         }
 
-        case(JOYSTICK_UP): {
+        case(UP): {
             decline();
             break;
         }
-        case(JOYSTICK_DOWN): {
+        case(DOWN): {
             decline();
             break;
         }
@@ -177,8 +203,8 @@ void MenuBar::butClicked(PinName joyBut) {
         }
     }
 }
-void MenuBar::addPoint() {
-    _actualScore++;
+void MenuBar::setScore(int sc) {
+    _actualScore = sc;
 }
 int MenuBar::getHighScore() {
     return _highScore;

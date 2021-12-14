@@ -5,6 +5,8 @@
 #include <string>
 #include "mbed.h"
 #include "LCD_DISCO_L476VG.h"
+#include "CommonsSets.h"
+
 class MenuBar
 {
 
@@ -18,13 +20,15 @@ private:
 
 
 public:
-    MenuBar(LCD_DISCO_L476VG* menuDisplay );
+    MenuBar(LCD_DISCO_L476VG* menuDisplay, sharedStruct* sharedData );
     void init();
-    void butClicked(PinName joyBut);
-    void addPoint();
+    void butClicked(Direction joyBut);
+    void setScore(int sc);
     int getHighScore();
     bool isGameRunning();
     void gameStopped();
+    void startGame();
+    void menuThread();
 
 private:
     void next();
@@ -40,6 +44,7 @@ private:
     bool askReset;
     bool gameRun;
     bool showScore;
+    sharedStruct* sharedData;
 
     mainMenu _actualMenu;
     LCD_DISCO_L476VG* _display;

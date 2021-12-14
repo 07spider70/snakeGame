@@ -11,7 +11,7 @@ class Snake {
     public:
         Snake(COORD position, int speed);
 
-        void setDirection(direction dir);
+        void setDirection(Direction dir);
         void growUp();
         COORD getPosition();
         vector<COORD> getBody();
@@ -23,7 +23,7 @@ class Snake {
     private:
         COORD position;
         int speed;
-        direction dir;
+        Direction dir;
         vector<COORD> body;
         int length;
 
